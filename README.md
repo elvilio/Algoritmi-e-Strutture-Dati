@@ -18,3 +18,13 @@ Algoritmi relativi al corso *Algoritmi e Strutture Dati*.
 | `2019_**_**_sum.c` | Somma di un Array |
 
 I file con estensione `.c` sono scritti in c e compilati con `gcc`, i file con estensione `.cpp` sono scritti in c++11 e compilati con `g++ -std=c++11`.
+
+Nella cartella `Project` è invece presente il progetto finale di cui si può leggere sulla [pagina del corso](http://didawiki.cli.di.unipi.it/doku.php/matematica/asd/asd_18/progetto_18).
+Per compilare il progetto basta eseguire:
+
+```sh
+g++ -std=c++17 -Ofast *.cpp -o output
+./output
+```
+
+dentro la cartella `Project`.
