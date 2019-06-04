@@ -3,17 +3,13 @@
 #include <fstream>
 #include <unordered_map>
 
-#include "Bruijn.hpp"
 #include "P_string.hpp"
+#include "Bruijn.hpp"
 
 #define PBSTR "--------------------------------------------------------------------------------"
 #define PBWIDTH 80
 
-GraphBrujn::GraphBrujn(){
-	std::unordered_map<std::string, std::vector<std::string> > grafo;
-	size_k_mero = 99;
-	size_of_file = 0;
-}
+/* local functions */
 
 void printProgress (double percentage){
 	int val = (int) (percentage * 100);
@@ -23,11 +19,41 @@ void printProgress (double percentage){
 	fflush(stdout);
 }
 
-void GraphBrujn::set_size_of_file(int size){
+std::string other_letters(std::string N){
+	// switch doesn't work with std::string
+	std::string ALL;
+	if(N=="T"){
+		ALL = "GCA";
+	} else if(N=="G") {
+		ALL = "TCA";
+	} else if(N=="C"){
+		ALL = "GTA";
+	} else if(N=="A"){
+		ALL = "GCT";
+	} else {
+		ALL = "GCAT";
+	} return ALL;
+}
+
+/* End local functions */
+
+GraphBruijn::GraphBruijn(){
+	std::unordered_map<std::string, std::vector<std::string> > grafo;
+	size_k_mero = 99;
+	size_of_file = 0;
+}
+
+GraphBruijn::GraphBruijn(int size){
+	std::unordered_map<std::string, std::vector<std::string> > grafo;
+	size_k_mero = 99;
 	size_of_file = size;
 }
 
-void GraphBrujn::set_size_of_file(std::string path){
+void GraphBruijn::set_size_of_file(int size){
+	size_of_file = size;
+}
+
+void GraphBruijn::set_size_of_file(std::string path){
 	size_of_file = 0;
 	FILE *infile = std::fopen(path.c_str(), "r");
 	int ch;
@@ -38,7 +64,11 @@ void GraphBrujn::set_size_of_file(std::string path){
 	std::fclose(infile);
 }
 
-int GraphBrujn::read_all(std::string file_name){
+void GraphBruijn::set_size_k_mero(int size){
+	size_k_mero = size;
+}
+
+int GraphBruijn::read_all(std::string file_name){
 	// function that reads from file_name and adds the string to data_set
 	// returns data_set and the number of lines read
 	std::ifstream infile(file_name.c_str()); // open as object
@@ -49,7 +79,7 @@ int GraphBrujn::read_all(std::string file_name){
 	while (std::getline(infile, line)) {
 		
 		if (count % update == 0) {
-			printProgress((float) count/size_of_file);
+			printProgress((float) count / size_of_file);
 		}
 
 		if (grafo.count(line.substr(0, size_k_mero-1))) {
@@ -65,19 +95,13 @@ int GraphBrujn::read_all(std::string file_name){
 	return count;
 }
 
-bool GraphBrujn::present(p_string P){
+bool GraphBruijn::present(p_string P){
 	// Gets a string P and tries to find it
 	P.check(size_k_mero);
-	for (int i = 0; i < P.length()-size_k_mero; ++i) {
-		if(std::find(grafo[P.substr(i, size_k_mero-1)].begin(),
-					 grafo[P.substr(i, size_k_mero-1)].end(),
-					 P.substr(i, size_k_mero)) == grafo[P.substr(i, size_k_mero-1)].end())
-			return false;
-	}
-	return true;
+	return present(P.substr(0,P.length()));
 }
 
-bool GraphBrujn::present(std::string P){
+bool GraphBruijn::present(std::string P){
 	// Gets a string P and tries to find it
 	// (assumes that P is a correct string)
 	for (int i = 0; i < P.length()-size_k_mero; ++i) {
@@ -89,7 +113,7 @@ bool GraphBrujn::present(std::string P){
 	return true;
 }
 
-int GraphBrujn::maxlength_present(p_string P) {
+int GraphBruijn::maxlength_present(p_string P) {
 	// Gets a string P and tries to find the maximum substring that is present
 	// in data_set
 	P.check(size_k_mero);
@@ -102,23 +126,7 @@ int GraphBrujn::maxlength_present(p_string P) {
 	return P.length();
 }
 
-std::string other_letters(std::string N){
-	std::string ALL;
-	if(N=="T"){
-		ALL = "GCA";
-	} else if(N=="G") {
-		ALL = "TCA";
-	} else if(N=="C"){
-		ALL = "GTA";
-	} else if(N=="A"){
-		ALL = "GCT";
-	} else {
-		ALL = "GCAT";
-	}
-	return ALL;
-}
-
-bool GraphBrujn::error_present(p_string P){
+bool GraphBruijn::error_present(p_string P){
 	// TODO
 	if(present(P))
 		return true;
@@ -133,7 +141,7 @@ bool GraphBrujn::error_present(p_string P){
 	return false;
 }
 
-void GraphBrujn::print_all(){
+void GraphBruijn::print_all(){
 	// "scorre" tutto il grafo ma non in modo ordinato
 	for (const auto &p : grafo) {
 		std::cout << p.first << " => ";

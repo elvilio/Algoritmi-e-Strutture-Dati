@@ -2,8 +2,8 @@
 #include <string>
 #include <vector>
 
-#include "Bruijn.hpp"
 #include "P_string.hpp"
+#include "Bruijn.hpp"
 
 std::string FILE_PATH = "test_files/7.txt";
 
@@ -11,13 +11,10 @@ std::string FILE_PATH = "test_files/7.txt";
 
 int main()
 {
-	std::string temp_p;
-	std::cin >> temp_p;
 	p_string P;
-	P.set_string(temp_p);
+	std::cin >> P;
 
-	GraphBrujn data_set;
-	data_set.set_size_of_file(10000000);
+	GraphBruijn data_set(10000000);
 
 	int count = data_set.read_all(FILE_PATH);
 	

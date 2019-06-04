@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <iostream>
 
 #include "P_string.hpp"
 
@@ -10,6 +11,18 @@ p_string::p_string() {
 p_string::p_string(std::string s){
 	p = s;
 	checkd = false;
+}
+
+void p_string::set_string(std::string s){
+	p = s;
+	checkd = false;
+}
+
+std::istream& operator >> (std::istream &input, p_string &P) {
+	std::string temp;
+	input >> temp;
+	P.set_string(temp);
+	return input;
 }
 
 void p_string::check(int size_k_mero){
@@ -33,11 +46,6 @@ int p_string::length() {
 
 std::string p_string::substr(int start, int length){
 	return p.substr(start, length);
-}
-
-void p_string::set_string(std::string s){
-	p = s;
-	checkd = false;
 }
 
 std::string p_string::modify(int position, char N){
