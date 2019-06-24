@@ -8,8 +8,9 @@
 
 #define PBSTR "--------------------------------------------------------------------------------"
 #define PBWIDTH 80
+#define DEFAULT_SIZE_OF_KMERO 99
 
-/* local functions */
+/* funzioni locali */
 
 void printProgress (double percentage){
 	int val = (int) (percentage * 100);
@@ -20,7 +21,7 @@ void printProgress (double percentage){
 }
 
 std::string other_letters(std::string N){
-	// switch doesn't work with std::string
+	// switch non funziona con std::string
 	std::string ALL;
 	if(N=="T"){
 		ALL = "GCA";
@@ -35,17 +36,17 @@ std::string other_letters(std::string N){
 	} return ALL;
 }
 
-/* End local functions */
+/* fine funzioni locali */
 
 GraphBruijn::GraphBruijn(){
 	std::unordered_map<std::string, std::vector<std::string> > grafo;
-	size_k_mero = 99;
+	size_k_mero = DEFAULT_SIZE_OF_KMERO;
 	size_of_file = 0;
 }
 
 GraphBruijn::GraphBruijn(int size){
 	std::unordered_map<std::string, std::vector<std::string> > grafo;
-	size_k_mero = 99;
+	size_k_mero = DEFAULT_SIZE_OF_KMERO;
 	size_of_file = size;
 }
 
@@ -69,15 +70,16 @@ void GraphBruijn::set_size_k_mero(int size){
 }
 
 int GraphBruijn::read_all(std::string file_name){
-	// function that reads from file_name and adds the string to data_set
-	// returns data_set and the number of lines read
-	std::ifstream infile(file_name.c_str()); // open as object
+	// Funzione che legge dal file file_name e aggiunge i k-meri al grafo,
+	// l'output è il numero di linee lette.
+	// Viene anche visualizzato il progresso della lettura attraverso la
+	// funzione printProgress.
+	std::ifstream infile(file_name.c_str()); // aperto come oggetto
 	int count = 0;
 	int update = size_of_file/100;
 
 	std::string line;
 	while (std::getline(infile, line)) {
-		
 		if (count % update == 0) {
 			printProgress((float) count / size_of_file);
 		}
@@ -96,14 +98,14 @@ int GraphBruijn::read_all(std::string file_name){
 }
 
 bool GraphBruijn::present(p_string P){
-	// Gets a string P and tries to find it
+	// Cerca la stringa P dentro il grafo
 	P.check(size_k_mero);
 	return present(P.substr(0,P.length()));
 }
 
 bool GraphBruijn::present(std::string P){
-	// Gets a string P and tries to find it
-	// (assumes that P is a correct string)
+	// Cerca la stringa P dentro il grafo
+	// (assume che la stringa P possa comparire nel grafo)
 	for (int i = 0; i < P.length()-size_k_mero; ++i) {
 		if(std::find(grafo[P.substr(i, size_k_mero-1)].begin(),
 					 grafo[P.substr(i, size_k_mero-1)].end(),
@@ -114,8 +116,7 @@ bool GraphBruijn::present(std::string P){
 }
 
 int GraphBruijn::maxlength_present(p_string P) {
-	// Gets a string P and tries to find the maximum substring that is present
-	// in data_set
+	// Cerca la massima sottostringa di P presente
 	P.check(size_k_mero);
 	for (int i = 0; i < P.length()-size_k_mero; ++i) {
 		if(std::find(grafo[P.substr(i, size_k_mero-1)].begin(),
@@ -127,16 +128,16 @@ int GraphBruijn::maxlength_present(p_string P) {
 }
 
 bool GraphBruijn::error_present(p_string P){
-	// TODO
+	// Cerca la stringa P con un errore
+	// Utilizza la funzione maxlength_present per trovare la posizione dell'errore
 	if(present(P))
 		return true;
 
-	for (int i = 0; i < P.length(); ++i) {
-		for(const char s: other_letters(P.substr(i,1))){
-			if(present(P.modify(i,s))){
-				return true;
-			}
-		}
+	int max = maxlength_present(P);
+	for(const char s: other_letters(P.substr(max,1))) {
+		if(present(P.modify(max,s))) {
+	 		return true;
+	 	}
 	}
 	return false;
 }

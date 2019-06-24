@@ -5,18 +5,18 @@
 #include "P_string.hpp"
 #include "Bruijn.hpp"
 
-std::string FILE_PATH = "test_files/7.txt";
+std::string FILE_PATH = "test_files/7.txt"; // file di input
 
-/* to build: g++ -std=c++17 -Ofast *.cpp -o output */
+/* to build: g++ -std=c++11 -Ofast *.cpp -o output */
 
 int main()
 {
 	p_string P;
 	std::cin >> P;
 
-	GraphBruijn data_set(10000000);
+	GraphBruijn data_set(10000000); // Numero di k-meri da leggere
 
-	int count = data_set.read_all(FILE_PATH);
+	int count = data_set.read_all(FILE_PATH); // legge dal file
 	
 	std::cout << std::endl << count << " lines read." << std::endl;
 

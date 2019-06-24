@@ -26,8 +26,10 @@ std::istream& operator >> (std::istream &input, p_string &P) {
 }
 
 void p_string::check(int size_k_mero){
-	// throw exceptions if P is not a p_mero
+	// Controlla la correttezza del k-mero
+	// La classe p_string non conosce la dimensione di k e quindi è richiesta
 	if(checkd) return;
+
 	if (p.length()<size_k_mero)
 		throw std::invalid_argument("String not long enough.");
 	
@@ -49,6 +51,7 @@ std::string p_string::substr(int start, int length){
 }
 
 std::string p_string::modify(int position, char N){
+	// cambia la lettera nella posizione position con il carattere N
 	std::string temp_p = p;
 	temp_p[position] = N;
 	return temp_p;
