@@ -106,10 +106,13 @@ bool GraphBruijn::present(p_string P){
 bool GraphBruijn::present(std::string P){
 	// Cerca la stringa P dentro il grafo
 	// (assume che la stringa P possa comparire nel grafo)
-	for (int i = 0; i < P.length()-size_k_mero; ++i) {
+	for (int i = 0; i < P.length()-size_k_mero+1; ++i) {
 		if(std::find(grafo[P.substr(i, size_k_mero-1)].begin(),
 					 grafo[P.substr(i, size_k_mero-1)].end(),
 					 P.substr(i, size_k_mero)) == grafo[P.substr(i, size_k_mero-1)].end())
+			// true se la sottostringa di P a partire da i lunga size_k_mero
+			// NON è presente nel grafo, cioè arriva fino alla fine della stringa
+			// e non la trova.
 			return false;
 	}
 	return true;
@@ -117,12 +120,14 @@ bool GraphBruijn::present(std::string P){
 
 int GraphBruijn::maxlength_present(p_string P) {
 	// Cerca la massima sottostringa di P presente
+	if(!present(P.substr(0,size_k_mero)))
+		throw std::invalid_argument("The string doesnt start with a valid k-mero");
 	P.check(size_k_mero);
-	for (int i = 0; i < P.length()-size_k_mero; ++i) {
+	for (int i = 0; i < P.length()-size_k_mero+1; ++i) {
 		if(std::find(grafo[P.substr(i, size_k_mero-1)].begin(),
 					 grafo[P.substr(i, size_k_mero-1)].end(),
 					 P.substr(i, size_k_mero)) == grafo[P.substr(i, size_k_mero-1)].end())
-			return size_k_mero+i;
+			return size_k_mero+i-1;
 	}
 	return P.length();
 }

@@ -12,7 +12,7 @@ std::string FILE_PATH = "test_files/7.txt"; // file di input
 int main()
 {
 	p_string P;
-	std::cin >> P;
+	std::cin >> P; // Implementazione della classe p_string
 
 	GraphBruijn data_set(10000000); // Numero di k-meri da leggere
 
@@ -20,9 +20,9 @@ int main()
 	
 	std::cout << std::endl << count << " lines read." << std::endl;
 
-	// std::cout << data_set.present(P) << std::endl;
-	// std::cout << data_set.maxlength_present(P) << std::endl;
-	// std::cout << data_set.error_present(P) << std::endl;
+	std::cout << data_set.present(P) << std::endl;
+	std::cout << data_set.maxlength_present(P) << std::endl;
+	std::cout << data_set.error_present(P) << std::endl;
 
 	return 0;
 }
