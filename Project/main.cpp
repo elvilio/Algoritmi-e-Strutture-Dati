@@ -14,7 +14,7 @@ int main()
 	p_string P;
 	std::cin >> P; // Implementazione della classe p_string
 
-	GraphBruijn data_set(10000000); // Numero di k-meri da leggere
+	GraphBruijn data_set(10000000, 0); // Numero di k-meri da leggere
 
 	int count = data_set.read_all(FILE_PATH); // legge dal file
 	

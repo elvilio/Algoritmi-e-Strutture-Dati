@@ -2,13 +2,15 @@
 #include <vector>
 #include <fstream>
 #include <unordered_map>
+#include <stdexcept>
 
 #include "P_string.hpp"
 #include "Bruijn.hpp"
 
+#define DEFAULT_SIZE_OF_KMERO 99
+
 #define PBSTR "--------------------------------------------------------------------------------"
 #define PBWIDTH 80
-#define DEFAULT_SIZE_OF_KMERO 99
 
 /* funzioni locali */
 
@@ -39,30 +41,52 @@ std::string other_letters(std::string N){
 /* fine funzioni locali */
 
 GraphBruijn::GraphBruijn(){
-	std::unordered_map<std::string, std::vector<std::string> > grafo;
+	std::unordered_map<std::string, std::vector<char> > grafo;
+	std::set<std::string> set;
 	size_k_mero = DEFAULT_SIZE_OF_KMERO;
 	size_of_file = 0;
+	mode = 0;
 }
 
 GraphBruijn::GraphBruijn(int size){
-	std::unordered_map<std::string, std::vector<std::string> > grafo;
+	std::unordered_map<std::string, std::vector<char> > grafo;
+	grafo.reserve(size);
+	std::set<std::string> set;
 	size_k_mero = DEFAULT_SIZE_OF_KMERO;
 	size_of_file = size;
+	mode = 0;
+}
+
+GraphBruijn::GraphBruijn(int size, int _mode){
+	std::unordered_map<std::string, std::vector<char> > grafo;
+	grafo.reserve(size);
+	std::set<std::string> set;
+	size_k_mero = DEFAULT_SIZE_OF_KMERO;
+	size_of_file = size;
+	mode = _mode;
 }
 
 void GraphBruijn::set_size_of_file(int size){
-	size_of_file = size;
+	if(size_of_file<size) {
+		grafo.reserve(size);
+		size_of_file = size;
+	}
+	else {
+		throw std::invalid_argument("Resize is smaller then already allocated space");
+	}
 }
 
 void GraphBruijn::set_size_of_file(std::string path){
-	size_of_file = 0;
+	int new_size = 0;
 	FILE *infile = std::fopen(path.c_str(), "r");
 	int ch;
 
 	while (EOF != (ch=getc(infile)))
 		if ('\n' == ch)
-			++size_of_file;
+			++new_size;
 	std::fclose(infile);
+	try { set_size_of_file(new_size); }
+	catch (const std::invalid_argument&) { ; }
 }
 
 void GraphBruijn::set_size_k_mero(int size){
@@ -74,24 +98,43 @@ int GraphBruijn::read_all(std::string file_name){
 	// l'output è il numero di linee lette.
 	// Viene anche visualizzato il progresso della lettura attraverso la
 	// funzione printProgress.
+	// mode: 0 -> crea solo un dizionario (default)
+	//		 1 -> crea anche un set ordinato di tutti i k-meri
 	std::ifstream infile(file_name.c_str()); // aperto come oggetto
 	int count = 0;
 	int update = size_of_file/100;
 
 	std::string line;
-	while (std::getline(infile, line)) {
-		if (count % update == 0) {
-			printProgress((float) count / size_of_file);
-		}
 
-		if (grafo.count(line.substr(0, size_k_mero-1))) {
-			grafo[line.substr(0, size_k_mero-1)].push_back(line);
-		} else {
-			grafo[line.substr(0, size_k_mero-1)] = std::vector<std::string>() ;
-			grafo[line.substr(0, size_k_mero-1)].push_back(line);
+	if(!mode) {
+		while (std::getline(infile, line)) {
+			if (count % update == 0)
+				printProgress((float) count / size_of_file);
+
+			if (grafo.count(line.substr(0, size_k_mero-1))) {
+				grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero]);
+			} else {
+				grafo[line.substr(0, size_k_mero-1)] = std::vector<char>() ;
+				grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero]);
+			}
+			++count;
 		}
-		++count;
+	} else {
+		while (std::getline(infile, line)) {
+			if (count % update == 0)
+				printProgress((float) count / size_of_file);
+
+			if (grafo.count(line.substr(0, size_k_mero-1))) {
+				grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero]);
+			} else {
+				grafo[line.substr(0, size_k_mero-1)] = std::vector<char>() ;
+				grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero]);
+			}
+			set.insert(line);
+			++count;
+		}
 	}
+
 	printProgress((float) 1);
 	infile.close();
 	return count;
@@ -107,9 +150,8 @@ bool GraphBruijn::present(std::string P){
 	// Cerca la stringa P dentro il grafo
 	// (assume che la stringa P possa comparire nel grafo)
 	for (int i = 0; i < P.length()-size_k_mero+1; ++i) {
-		if(std::find(grafo[P.substr(i, size_k_mero-1)].begin(),
-					 grafo[P.substr(i, size_k_mero-1)].end(),
-					 P.substr(i, size_k_mero)) == grafo[P.substr(i, size_k_mero-1)].end())
+		const std::vector<char> v = grafo[P.substr(i,size_k_mero-1)];
+		if(std::find(v.begin(), v.end(), P.substr(i+size_k_mero-1,1)[0]) == v.end())
 			// true se la sottostringa di P a partire da i lunga size_k_mero
 			// NON è presente nel grafo, cioè arriva fino alla fine della stringa
 			// e non la trova.
@@ -118,15 +160,52 @@ bool GraphBruijn::present(std::string P){
 	return true;
 }
 
-int GraphBruijn::maxlength_present(p_string P) {
+int GraphBruijn::maxlength_present(p_string P, int _mode) {
 	// Cerca la massima sottostringa di P presente
-	if(!present(P.substr(0,size_k_mero)))
-		throw std::invalid_argument("The string doesnt start with a valid k-mero");
+	// mode: 0 -> non cerca la sottostringa di P se è minore di k (default)
+	//		 1 -> cerca la sottostringa di P come prefisso usando set
+	//		 2 -> cerca la sottostringa di P come qualsiasi sottostringa di k-mero
+
+	if(!present(P.substr(0,size_k_mero))){
+		if(_mode > 0 && mode == 0)
+			throw std::invalid_argument("Not a valid construction of set");
+		if(_mode == 0)
+			throw std::invalid_argument("The string doesnt start with a valid k-mero");
+		if(_mode == 1){
+			int max_present=1;
+			bool error = false;
+			bool found = false;
+
+			for(;max_present<size_k_mero && !error; ++max_present){
+				found = false;
+				for(std::set<std::string>::const_iterator it(set.lower_bound(P.substr(0,max_present)));
+						it != set.end() && it->find(P.substr(0,max_present)) == 0 && !found;
+						++it) {
+					found = true;
+				}
+				if(!found){
+					return max_present;
+				}
+			}
+			
+		}
+		if(_mode == 2){
+			int k = 1;
+			for(std::set<std::string>::const_iterator it(set.begin());
+				it != set.end();
+				++it){
+				if(it->find(P.substr(0,k)) == std::string::npos)
+					return k;
+				++k;
+			}
+		}
+	}
+	
+
 	P.check(size_k_mero);
 	for (int i = 0; i < P.length()-size_k_mero+1; ++i) {
-		if(std::find(grafo[P.substr(i, size_k_mero-1)].begin(),
-					 grafo[P.substr(i, size_k_mero-1)].end(),
-					 P.substr(i, size_k_mero)) == grafo[P.substr(i, size_k_mero-1)].end())
+		const std::vector<char> v = grafo[P.substr(i,size_k_mero-1)];
+		if(std::find(v.begin(), v.end(), P.substr(i+size_k_mero-1, 1)[0]) == v.end())
 			return size_k_mero+i-1;
 	}
 	return P.length();
@@ -138,11 +217,19 @@ bool GraphBruijn::error_present(p_string P){
 	if(present(P))
 		return true;
 
-	int max = maxlength_present(P);
-	for(const char s: other_letters(P.substr(max,1))) {
-		if(present(P.modify(max,s))) {
-	 		return true;
-	 	}
+	int max = size_k_mero;
+
+	try {
+		max = maxlength_present(P,0);
+	} catch(const std::invalid_argument&) {
+		;
+	}
+
+	for (int s = max; s > -1; --s) {
+		for(const char c: other_letters(P.substr(s,1))){
+			if(present(P.modify(s,c)))
+				return true;
+		}
 	}
 	return false;
 }
