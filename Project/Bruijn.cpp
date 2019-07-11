@@ -165,38 +165,89 @@ int GraphBruijn::maxlength_present(p_string P, int _mode) {
 	// mode: 0 -> non cerca la sottostringa di P se è minore di k (default)
 	//		 1 -> cerca la sottostringa di P come prefisso usando set
 	//		 2 -> cerca la sottostringa di P come qualsiasi sottostringa di k-mero
+	//		 3 -> cerca la sottostringa di P come suffisso usando set
+	//		 4 -> usa la 1 e la 3 per ricavare il massimo effettivo
 
 	if(!present(P.substr(0,size_k_mero))){
 		if(_mode > 0 && mode == 0)
 			throw std::invalid_argument("Not a valid construction of set");
-		if(_mode == 0)
-			throw std::invalid_argument("The string doesnt start with a valid k-mero");
-		if(_mode == 1){
-			int max_present=1;
-			bool error = false;
-			bool found = false;
+		
+		switch(_mode){
+			case 1: {
+				int max_present=1;
+				bool error = false;
+				bool found = false;
 
-			for(;max_present<size_k_mero && !error; ++max_present){
-				found = false;
-				for(std::set<std::string>::const_iterator it(set.lower_bound(P.substr(0,max_present)));
-						it != set.end() && it->find(P.substr(0,max_present)) == 0 && !found;
-						++it) {
-					found = true;
+				for(;max_present<size_k_mero && !error; ++max_present){
+					found = false;
+					for(std::set<std::string>::const_iterator it(set.lower_bound(P.substr(0,max_present)));
+							it != set.end() && it->find(P.substr(0,max_present)) == 0 && !found;
+							++it) {
+						found = true;
+					}
+					if(!found){
+						return max_present;
+					}
 				}
-				if(!found){
-					return max_present;
-				}
+				break;
 			}
-			
-		}
-		if(_mode == 2){
-			int k = 1;
-			for(std::set<std::string>::const_iterator it(set.begin());
-				it != set.end();
-				++it){
-				if(it->find(P.substr(0,k)) == std::string::npos)
-					return k;
-				++k;
+			case 2:{
+				int max_present = 1;
+				for(std::set<std::string>::const_iterator it = set.begin();
+					it != set.end();
+					++it){
+					if(it->find(P.substr(0,max_present)) == std::string::npos)
+						return max_present;
+					else
+						++max_present;
+				}
+				break;
+			}
+			case 3:{
+				int max_present = 1;
+				for(std::set<std::string>::const_iterator it = set.begin();
+					it != set.end();
+					++it){
+					if((*it).compare(size_k_mero-max_present,
+						max_present,P.substr(0,max_present))==0)
+						++max_present;
+					else
+						return max_present;
+				}
+				break;
+			}
+			case 4:{
+				int max_present1=1;
+				bool error = false;
+				bool found = false;
+
+				for(;max_present1<size_k_mero && !error; ++max_present1){
+					found = false;
+					for(std::set<std::string>::const_iterator it(set.lower_bound(P.substr(0,max_present1)));
+							it != set.end() && it->find(P.substr(0,max_present1)) == 0 && !found;
+							++it) {
+						found = true;
+					}
+					if(!found){
+						break;
+					}
+				}
+				int max_present2 = 1;
+				for(std::set<std::string>::const_iterator it = set.begin();
+					it != set.end();
+					++it){
+					if((*it).compare(size_k_mero-max_present2,
+						max_present2,P.substr(0,max_present2))==0)
+						++max_present2;
+					else
+						break;
+				}
+				return (max_present2 < max_present1) ? max_present1 : max_present2;
+				break;
+			}
+			default:{
+				throw std::invalid_argument("The string doesnt start with a valid k-mero");
+				break;
 			}
 		}
 	}
