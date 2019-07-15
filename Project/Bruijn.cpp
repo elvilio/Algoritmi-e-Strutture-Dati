@@ -14,7 +14,7 @@
 
 /* funzioni locali */
 
-void printProgress (double percentage){
+void printProgress(double percentage){
 	int val = (int) (percentage * 100);
 	int lpad = (int) (percentage * PBWIDTH);
 	int rpad = PBWIDTH - lpad;
@@ -93,45 +93,59 @@ void GraphBruijn::set_size_k_mero(int size){
 	size_k_mero = size;
 }
 
+void GraphBruijn::set_size_k_mero(std::string path){
+	FILE *infile = std::fopen(path.c_str(), "r");
+	int ch;
+	int new_size = 0;
+	while (EOF != (ch=getc(infile)) && '\n' != ch)
+		++new_size;
+	std::fclose(infile);
+	size_k_mero = new_size;
+}
+
 int GraphBruijn::read_all(std::string file_name){
 	// Funzione che legge dal file file_name e aggiunge i k-meri al grafo,
 	// l'output è il numero di linee lette.
 	// Viene anche visualizzato il progresso della lettura attraverso la
 	// funzione printProgress.
-	// mode: 0 -> crea solo un dizionario (default)
-	//		 1 -> crea anche un set ordinato di tutti i k-meri
+	// mode: 0       -> crea solo un dizionario (default)
+	//		 1,2,3,4 -> crea anche un set ordinato di tutti i k-meri
 	std::ifstream infile(file_name.c_str()); // aperto come oggetto
 	int count = 0;
 	int update = size_of_file/100;
 
 	std::string line;
 
-	if(!mode) {
-		while (std::getline(infile, line)) {
-			if (count % update == 0)
-				printProgress((float) count / size_of_file);
+	switch(mode){
+		case 0: {
+			while (std::getline(infile, line)){
+				if (count % update == 0)
+					printProgress((float) count / size_of_file);
 
-			if (grafo.count(line.substr(0, size_k_mero-1))) {
-				grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero]);
-			} else {
-				grafo[line.substr(0, size_k_mero-1)] = std::vector<char>() ;
-				grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero]);
+				if (grafo.count(line.substr(0, size_k_mero-1))) {
+					grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero-1]);
+				} else {
+					grafo[line.substr(0, size_k_mero-1)] = std::vector<char>() ;
+					grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero-1]);
+				}
+				++count;
 			}
-			++count;
+			break;
 		}
-	} else {
-		while (std::getline(infile, line)) {
-			if (count % update == 0)
-				printProgress((float) count / size_of_file);
+		default: {
+			while (std::getline(infile, line)){
+				if (count % update == 0)
+					printProgress((float) count / size_of_file);
 
-			if (grafo.count(line.substr(0, size_k_mero-1))) {
-				grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero]);
-			} else {
-				grafo[line.substr(0, size_k_mero-1)] = std::vector<char>() ;
-				grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero]);
+				if (grafo.count(line.substr(0, size_k_mero-1))) {
+					grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero-1]);
+				} else {
+					grafo[line.substr(0, size_k_mero-1)] = std::vector<char>() ;
+					grafo[line.substr(0, size_k_mero-1)].push_back(line[size_k_mero-1]);
+				}
+				set.insert(line);
+				++count;
 			}
-			set.insert(line);
-			++count;
 		}
 	}
 
@@ -160,25 +174,24 @@ bool GraphBruijn::present(std::string P){
 	return true;
 }
 
-int GraphBruijn::maxlength_present(p_string P, int _mode) {
+int GraphBruijn::maxlength_present(p_string P, int _mode){
 	// Cerca la massima sottostringa di P presente
 	// mode: 0 -> non cerca la sottostringa di P se è minore di k (default)
 	//		 1 -> cerca la sottostringa di P come prefisso usando set
 	//		 2 -> cerca la sottostringa di P come qualsiasi sottostringa di k-mero
-	//		 3 -> cerca la sottostringa di P come suffisso usando set
+	//		 3 -> cerca la sottostringa di P come suffisso usando set (non efficente)
 	//		 4 -> usa la 1 e la 3 per ricavare il massimo effettivo
 
 	if(!present(P.substr(0,size_k_mero))){
 		if(_mode > 0 && mode == 0)
 			throw std::invalid_argument("Not a valid construction of set");
-		
+
 		switch(_mode){
 			case 1: {
 				int max_present=1;
-				bool error = false;
 				bool found = false;
 
-				for(;max_present<size_k_mero && !error; ++max_present){
+				for(;max_present<size_k_mero; ++max_present){
 					found = false;
 					for(std::set<std::string>::const_iterator it(set.lower_bound(P.substr(0,max_present)));
 							it != set.end() && it->find(P.substr(0,max_present)) == 0 && !found;
@@ -189,6 +202,7 @@ int GraphBruijn::maxlength_present(p_string P, int _mode) {
 						return max_present;
 					}
 				}
+				throw std::range_error("Length in set is grater than that in grafo");
 				break;
 			}
 			case 2:{
@@ -197,31 +211,36 @@ int GraphBruijn::maxlength_present(p_string P, int _mode) {
 					it != set.end();
 					++it){
 					if(it->find(P.substr(0,max_present)) == std::string::npos)
-						return max_present;
-					else
+						continue;
+					else{
 						++max_present;
+						--it;
+					}
 				}
+				return max_present;
 				break;
 			}
 			case 3:{
 				int max_present = 1;
 				for(std::set<std::string>::const_iterator it = set.begin();
-					it != set.end();
-					++it){
-					if((*it).compare(size_k_mero-max_present,
-						max_present,P.substr(0,max_present))==0)
+					it != set.end() && max_present < size_k_mero; ++it){
+					if((*it).compare(size_k_mero-max_present,max_present,P.substr(0,max_present))==0){
 						++max_present;
+						--it;
+					}
 					else
-						return max_present;
+						continue;
 				}
+				return max_present;
 				break;
 			}
 			case 4:{
-				int max_present1=1;
-				bool error = false;
+				int max_present1 = 1;
+				int max_present2 = 1;
+
 				bool found = false;
 
-				for(;max_present1<size_k_mero && !error; ++max_present1){
+				for(;max_present1<size_k_mero; ++max_present1){
 					found = false;
 					for(std::set<std::string>::const_iterator it(set.lower_bound(P.substr(0,max_present1)));
 							it != set.end() && it->find(P.substr(0,max_present1)) == 0 && !found;
@@ -232,16 +251,16 @@ int GraphBruijn::maxlength_present(p_string P, int _mode) {
 						break;
 					}
 				}
-				int max_present2 = 1;
 				for(std::set<std::string>::const_iterator it = set.begin();
-					it != set.end();
-					++it){
-					if((*it).compare(size_k_mero-max_present2,
-						max_present2,P.substr(0,max_present2))==0)
+					it != set.end() && max_present2 < size_k_mero; ++it){
+					if((*it).compare(size_k_mero-max_present2,max_present2,P.substr(0,max_present2))==0){
 						++max_present2;
+						--it;
+					}
 					else
-						break;
+						continue;
 				}
+
 				return (max_present2 < max_present1) ? max_present1 : max_present2;
 				break;
 			}
@@ -251,7 +270,6 @@ int GraphBruijn::maxlength_present(p_string P, int _mode) {
 			}
 		}
 	}
-	
 
 	P.check(size_k_mero);
 	for (int i = 0; i < P.length()-size_k_mero+1; ++i) {

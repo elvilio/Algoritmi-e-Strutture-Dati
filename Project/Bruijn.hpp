@@ -15,6 +15,7 @@ class GraphBruijn {
 		void set_size_of_file(int size);
 		void set_size_of_file(std::string path);
 		void set_size_k_mero(int size);
+		void set_size_k_mero(std::string path);
 		int read_all(std::string file_name);
 
 		bool present(p_string P);
